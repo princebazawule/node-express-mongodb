@@ -1,6 +1,14 @@
 const db = require("../models")
 const Tutorial = db.tutorials
 
+// setup pagination
+const getPagination = (page, size) => {
+  const limit = size ? +size : 10
+  const offset = page ? page * limit : 0
+
+  return { limit, offset }
+}
+
 // create and save new tutorial
 exports.create = (req, res) => {
   // Validate request
@@ -32,12 +40,20 @@ exports.create = (req, res) => {
 
 // find all tutorials from db
 exports.findAll = (req, res) => {
-  const title = req.query.title
+  const { page, size, title, _order } = req.query
   let condition = title ? { title: { $regex: new RegExp(title), $options: "i" } } : {}
-
-  Tutorial.find(condition)
+  const { limit, offset } = getPagination(page, size)
+  
+  Tutorial.paginate(condition, { offset, limit, sort:{ "createdAt": _order} })
     .then((data) => {
-      res.send(data)
+      res.send(
+        {
+          totalItems: data.totalDocs,
+          tutorials: data.docs,
+          totalPages: data.totalPages,
+          currentPage: data.page - 1,
+        }
+      )
     })
     .catch((err) => {
       res.status(500).send({
@@ -66,9 +82,17 @@ exports.findOne = (req, res) => {
 
 // find all published tutorials
 exports.findAllPublished = (req, res) => {
-  Tutorial.find({ published: true })
+  const { page, size, _sort, _order } = req.query
+  const { limit, offset } = getPagination(page, size)
+
+  Tutorial.paginate({ published: true }, { offset, limit, sort:{ _sort: _order } })
     .then((data) => {
-      res.send(data)
+      res.send({
+        totalItems: data.totalDocs,
+        tutorials: data.docs,
+        totalPages: data.totalPages,
+        currentPage: data.page - 1,
+      })
     })
     .catch((err) => {
       res.status(500).send({

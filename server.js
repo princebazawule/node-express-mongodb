@@ -21,6 +21,7 @@ app.use(express.urlencoded({ extended: false }))
 // parse requests of content-type: application/json
 app.use(express.json())
 
+// mongodb connection
 const db = require("./app/models")
 db.mongoose
   .connect(db.url, {
